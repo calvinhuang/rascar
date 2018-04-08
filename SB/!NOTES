@@ -1,0 +1,7 @@
+1. Follow lane:
+    Vision: given an image, detect the "lane"
+    Draw a line through the lane
+    give me the equation of the line
+    Calibration: given background image(s), and lane image(s)
+
+
