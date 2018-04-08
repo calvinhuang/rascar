@@ -68,12 +68,15 @@ def process_image(img):
     left, right = determine_lanes(lines)
 
     m, b = determine_slope_intercept(left)
+
     n, c = determine_slope_intercept(right)
 
-    if check_lanes(m, c):
+    if check_lanes(m, n):
         p1, p2 = determine_points(m, b, 270, 719)
         p3, p4 = determine_points(n, c, 270, 719)
-        processed = draw_lane(img, p1, p2, p4, p3)
+        x, y = intersecting_lane_point(m, b, n, c)
+        vanish_point = draw_vanishing_point(img, x, y)
+        processed = draw_lane(vanish_point, p1, p2, p4, p3)
     else:
         print("THROW IMAGE")
         processed = img
@@ -92,14 +95,14 @@ def determine_lanes(lines):
 
     for line in lines:
         for x1, y1, x2, y2 in line:
-            if x1 == x2:
+            if x1 == x2 or y1 == y2:
                 continue
             slope = (y2-y1)/(x2-x1)
             intercept = y1 - slope * x1
 
-            if slope < 0:
+            if slope < -1:
                 left_lane.append([slope, intercept])
-            else:
+            if slope > 1:
                 right_lane.append([slope, intercept])
 
     return left_lane, right_lane
@@ -159,11 +162,54 @@ def check_lanes(left_slope, right_slope):
 
 
 def check_left_lane(slope):
-    return slope > 0
+    return slope < 0
 
 
 def check_right_lane(slope):
-    return slope < 0
+    return slope > 0
+
+
+def intersecting_lane_point(left_slope, left_intercept, right_slope, right_intercept):
+    x = (right_intercept - left_intercept)/(left_slope - right_slope)
+    y = (right_slope * x) + right_intercept
+
+    return int(x), int(y)
+
+
+def draw_vanishing_point(img, x, y, dest=None):
+    if dest is None:
+        dest = img
+
+    cv2.circle(dest, (x, y), 1, (0, 255, 0), thickness=10)
+
+    return dest
+
+
+def determine_angle_to_vp(midpoint, height, x, y):
+    p1 = (midpoint, height)
+    p2 = (midpoint, y)
+    p3 = (x, y)
+
+    opp= length_line(p2, p3)
+    hyp = length_line(p1, p3)
+
+    theta = np.arcsin(opp/hyp)
+
+    degree = radians_to_degree(theta)
+
+    return degree
+
+
+def length_line(pt1, pt2):
+    a = (pt2[0]-pt1[0])
+    b = (pt2[1]-pt1[1])
+    length = np.sqrt((a*a)+(b*b))
+
+    return length
+
+
+def radians_to_degree(radians):
+    return (radians*180)/np.pi
 
 
 if __name__ == '__main__':
@@ -180,3 +226,4 @@ if __name__ == '__main__':
             break
 
     cv2.destroyAllWindows()
+
